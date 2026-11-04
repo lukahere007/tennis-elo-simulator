@@ -20,6 +20,8 @@ import argparse
 import datetime as dt
 import io
 import json
+import os
+import re
 import time
 import urllib.error
 import urllib.request
@@ -27,8 +29,16 @@ from pathlib import Path
 
 import pandas as pd
 
-REPO = "JeffSackmann/tennis_atp"
-RAW_URL = "https://raw.githubusercontent.com/{repo}/{branch}/atp_matches_{year}.csv"
+#: Original source first. In late 2026 JeffSackmann/tennis_atp stopped being publicly
+#: reachable, so public mirrors of the same files are tried next (the data and its
+#: CC BY-NC-SA 4.0 licence are still Jeff Sackmann's).
+CANDIDATE_REPOS = [
+    "JeffSackmann/tennis_atp",
+    "zvonimir-rezo/tennis_atp",
+    "thekasser/tennis-wta-atp",
+]
+RAW_URL = "https://raw.githubusercontent.com/{repo}/{branch}/{path}"
+FILE_RE = re.compile(r"(?:^|/)atp_matches_(\d{4})\.csv$")
 
 KEEP_COLUMNS = [
     "tourney_id",
@@ -57,14 +67,19 @@ KEEP_COLUMNS = [
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def download(url: str, retries: int = 4) -> bytes | None:
+def download(url: str, retries: int = 4, api: bool = False) -> bytes | None:
     """Return the body of ``url``, ``None`` on HTTP 404, retrying transient errors."""
+    headers = {"User-Agent": "tennis-elo-simulator"}
+    token = os.environ.get("GITHUB_TOKEN")
+    if api and token:
+        headers["Authorization"] = f"Bearer {token}"
     for attempt in range(retries + 1):
         try:
-            with urllib.request.urlopen(url, timeout=60) as resp:
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=60) as resp:
                 return resp.read()
         except urllib.error.HTTPError as err:
-            if err.code == 404:
+            if err.code in (404, 451):
                 return None
             if attempt == retries:
                 raise
@@ -75,29 +90,57 @@ def download(url: str, retries: int = 4) -> bytes | None:
     return None
 
 
-def default_branch(repo: str = REPO) -> str:
-    """Ask the GitHub API for the repo's default branch (falls back to ``master``)."""
-    try:
-        body = download(f"https://api.github.com/repos/{repo}", retries=2)
-        if body:
-            return json.loads(body)["default_branch"]
-    except Exception as err:  # noqa: BLE001 - best effort only
-        print(f"could not query default branch: {err}")
-    return "master"
+def list_match_files(repo: str) -> tuple[str, dict[int, str]] | None:
+    """Return (branch, {year: path}) of tour-level ATP match files in ``repo``."""
+    meta = download(f"https://api.github.com/repos/{repo}", retries=2, api=True)
+    if not meta:
+        return None
+    branch = json.loads(meta)["default_branch"]
+    tree = download(f"https://api.github.com/repos/{repo}/git/trees/{branch}?recursive=1",
+                    retries=2, api=True)
+    if not tree:
+        return None
+    files = {}
+    for item in json.loads(tree).get("tree", []):
+        m = FILE_RE.search(item["path"])
+        if m and item["type"] == "blob" and "wta" not in item["path"].lower():
+            files.setdefault(int(m.group(1)), item["path"])
+    return branch, files
+
+
+def choose_source(start: int, end: int) -> tuple[str, str, dict[int, str]]:
+    """Pick the candidate repo covering the most years in ``[start, end]``."""
+    best = None
+    for repo in CANDIDATE_REPOS:
+        found = list_match_files(repo)
+        if not found:
+            print(f"{repo}: unavailable")
+            continue
+        branch, files = found
+        years = sorted(y for y in files if start <= y <= end)
+        print(f"{repo}@{branch}: {len(years)} years" + (f" ({years[0]}-{years[-1]})" if years else ""))
+        key = (len(years), max(years, default=0))
+        if years and (best is None or key > best[0]):
+            best = (key, repo, branch, files)
+    if best is None:
+        raise RuntimeError("no source repository with ATP match files is reachable")
+    _, repo, branch, files = best
+    return repo, branch, {y: p for y, p in files.items() if start <= y <= end}
 
 
 def fetch_years(start: int, end: int, raw_dir: Path) -> pd.DataFrame:
     """Download (or read from cache) every available year in ``[start, end]``."""
     raw_dir.mkdir(parents=True, exist_ok=True)
-    branch = default_branch()
-    print(f"source: {REPO}@{branch}")
+    repo, branch, files = choose_source(start, end)
+    print(f"source: {repo}@{branch}")
+    (raw_dir / "SOURCE.txt").write_text(f"{repo}@{branch}\n")
     frames = []
-    for year in range(start, end + 1):
+    for year, path in sorted(files.items()):
         cache = raw_dir / f"atp_matches_{year}.csv"
         if cache.exists():
             body = cache.read_bytes()
         else:
-            body = download(RAW_URL.format(repo=REPO, branch=branch, year=year))
+            body = download(RAW_URL.format(repo=repo, branch=branch, path=path))
             if body is None:
                 print(f"{year}: not available (404), skipping")
                 continue

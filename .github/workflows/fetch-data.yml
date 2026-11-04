@@ -20,23 +20,16 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install "pandas>=2.1" "pyarrow>=14"
-      - name: Inspect source repository
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          echo "== JeffSackmann repos =="
-          curl -sS -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/users/JeffSackmann/repos?per_page=100" | python -c "import json,sys; d=json.load(sys.stdin); print(d if isinstance(d,dict) else [r['name'] for r in d])" || true
-          echo "== search tennis_atp =="
-          curl -sS -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/search/repositories?q=tennis_atp+in:name&sort=updated&per_page=25" | python -c "import json,sys; d=json.load(sys.stdin); [print(r['full_name'], r['fork'], r['pushed_at'], r['size'], r['stargazers_count']) for r in d.get('items',[])] or print(d)" || true
-          echo "== tennis-data.co.uk =="
-          for y in 2015 2024 2025 2026; do curl -sS -o /dev/null -w "$y xlsx: %{http_code} %{size_download}\n" "http://www.tennis-data.co.uk/$y/$y.xlsx" || true; done
       - name: Download ATP matches
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: python scripts/fetch_data.py
       - name: Commit data if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/atp_matches.parquet
+          cp data/raw/SOURCE.txt data/SOURCE.txt
+          git add data/atp_matches.parquet data/SOURCE.txt
           if git diff --cached --quiet; then
             echo "No data changes"
           else
