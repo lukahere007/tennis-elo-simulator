@@ -1,0 +1,38 @@
+name: Fetch data
+
+on:
+  push:
+    branches: [claude/github-projects-improve-nh2reo]
+    paths:
+      - scripts/fetch_data.py
+      - .github/workflows/fetch-data.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install "pandas>=2.1" "pyarrow>=14"
+      - name: Download ATP matches
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/fetch_data.py
+      - name: Commit data if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cp data/raw/SOURCE.txt data/SOURCE.txt
+          git add data/atp_matches.parquet data/SOURCE.txt
+          if git diff --cached --quiet; then
+            echo "No data changes"
+          else
+            git commit -m "Update ATP match data (automated fetch)"
+            git push origin HEAD:${GITHUB_REF_NAME}
+          fi
