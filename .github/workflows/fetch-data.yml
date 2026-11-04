@@ -20,6 +20,11 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install "pandas>=2.1" "pyarrow>=14"
+      - name: Inspect source repository
+        run: |
+          curl -sS https://api.github.com/repos/JeffSackmann/tennis_atp | head -c 1500 || true
+          curl -sS -o /dev/null -w "raw master 2023: %{http_code}\n" https://raw.githubusercontent.com/JeffSackmann/tennis_atp/master/atp_matches_2023.csv || true
+          curl -sS -o /dev/null -w "raw main 2023: %{http_code}\n" https://raw.githubusercontent.com/JeffSackmann/tennis_atp/main/atp_matches_2023.csv || true
       - name: Download ATP matches
         run: python scripts/fetch_data.py
       - name: Commit data if changed

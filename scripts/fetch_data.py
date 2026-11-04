@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import io
+import json
 import time
 import urllib.error
 import urllib.request
@@ -26,7 +27,8 @@ from pathlib import Path
 
 import pandas as pd
 
-BASE_URL = "https://raw.githubusercontent.com/JeffSackmann/tennis_atp/master/atp_matches_{year}.csv"
+REPO = "JeffSackmann/tennis_atp"
+RAW_URL = "https://raw.githubusercontent.com/{repo}/{branch}/atp_matches_{year}.csv"
 
 KEEP_COLUMNS = [
     "tourney_id",
@@ -73,16 +75,29 @@ def download(url: str, retries: int = 4) -> bytes | None:
     return None
 
 
+def default_branch(repo: str = REPO) -> str:
+    """Ask the GitHub API for the repo's default branch (falls back to ``master``)."""
+    try:
+        body = download(f"https://api.github.com/repos/{repo}", retries=2)
+        if body:
+            return json.loads(body)["default_branch"]
+    except Exception as err:  # noqa: BLE001 - best effort only
+        print(f"could not query default branch: {err}")
+    return "master"
+
+
 def fetch_years(start: int, end: int, raw_dir: Path) -> pd.DataFrame:
     """Download (or read from cache) every available year in ``[start, end]``."""
     raw_dir.mkdir(parents=True, exist_ok=True)
+    branch = default_branch()
+    print(f"source: {REPO}@{branch}")
     frames = []
     for year in range(start, end + 1):
         cache = raw_dir / f"atp_matches_{year}.csv"
         if cache.exists():
             body = cache.read_bytes()
         else:
-            body = download(BASE_URL.format(year=year))
+            body = download(RAW_URL.format(repo=REPO, branch=branch, year=year))
             if body is None:
                 print(f"{year}: not available (404), skipping")
                 continue
