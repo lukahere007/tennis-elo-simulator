@@ -58,3 +58,19 @@ def test_reconstruct_bracket():
 def test_multiclass_brier():
     assert multiclass_brier(np.array([1.0, 0, 0]), 0) == 0.0
     assert multiclass_brier(np.array([0.5, 0.5]), 1) == pytest.approx(0.5)
+
+
+def test_seed_positions_and_draw():
+    from tennis_elo.slams import random_seeded_draw, standard_seed_positions
+
+    pos = standard_seed_positions(8, 4)
+    assert pos[0] == 0  # top seed on the first line
+    assert {p // 4 for p in pos[:2]} == {0, 1}
+    assert {p // 2 for p in pos[:4]} == {0, 1, 2, 3}  # top 4 in different quarters
+    rng = np.random.default_rng(0)
+    draw = random_seeded_draw(np.arange(128), 32, rng)
+    assert sorted(draw) == list(range(128))
+    slot = {p: i for i, p in enumerate(draw)}
+    # the 32 seeds sit in 32 different blocks of four -> cannot meet before round three
+    assert len({slot[s] // 4 for s in range(32)}) == 32
+    assert slot[0] // 64 != slot[1] // 64

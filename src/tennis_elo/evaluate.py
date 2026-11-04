@@ -96,3 +96,30 @@ def best_constant_shrink(p_winner: np.ndarray) -> float:
     z = np.log(p / (1 - p))
     res = minimize_scalar(lambda t: np.mean(np.logaddexp(0.0, -t * z)), bounds=(0.2, 3), method="bounded")
     return float(res.x)
+
+
+def fit_scale(d: np.ndarray, bo5: np.ndarray, bo5_adjust: bool = True) -> float:
+    """Factor ``t`` on the rating difference that minimises log loss of the winners' forecasts.
+
+    ``t < 1`` means the ratings were over-confident (differences too large).
+    """
+    from .elo import prob_from_diff
+
+    res = minimize_scalar(lambda t: log_loss(prob_from_diff(t * d, bo5, bo5_adjust)),
+                          bounds=(0.2, 2.0), method="bounded")
+    return float(res.x)
+
+
+def rolling_scale(d: np.ndarray, bo5: np.ndarray, year: np.ndarray, valid: np.ndarray,
+                  window: int = 3, bo5_adjust: bool = True) -> dict[int, float]:
+    """Walk-forward recalibration of the rating scale.
+
+    For each year Y the scale is fitted on the (already one-step-ahead) forecasts of years
+    ``Y-window .. Y-1`` and then applied to year Y, so no year-Y result is used to adjust
+    year-Y forecasts.
+    """
+    out = {}
+    for y in np.unique(year):
+        m = valid & (year >= y - window) & (year < y)
+        out[int(y)] = fit_scale(d[m], bo5[m], bo5_adjust) if m.sum() > 1000 else 1.0
+    return out

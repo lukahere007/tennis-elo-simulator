@@ -18,12 +18,13 @@ def slam_events(matches: pd.DataFrame, years: tuple[int, int]) -> list[tuple[str
 
 
 def elo_matrix(result: EloResult, start_row: int, ids: list[int], surface_code: int,
-               params: EloParams, best_of: int = 5) -> np.ndarray:
+               params: EloParams, best_of: int = 5, scale: float = 1.0) -> np.ndarray:
     """Pairwise P(i beats j) for the draw from the ratings frozen before ``start_row``."""
     state = result.snapshots[start_row]
     pos = np.array([result.players[i] for i in ids])
     a, b = np.meshgrid(pos, pos, indexing="ij")
-    P = blended_prob(state, a, b, surface_code, params.surface_weight, best_of, params.bo5_adjust)
+    P = blended_prob(state, a, b, surface_code, params.surface_weight, best_of, params.bo5_adjust,
+                     scale)
     np.fill_diagonal(P, 0.5)
     return P
 
@@ -45,7 +46,7 @@ def entry_ranks(event: pd.DataFrame, ids: list[int], missing: float = 2000.0) ->
 
 def forecast_slam(matches: pd.DataFrame, result: EloResult, tourney_id: str, start_row: int,
                   params: EloParams, rank_coef: tuple[float, float], n_sims: int = 20_000,
-                  seed: int = 0) -> pd.DataFrame | None:
+                  seed: int = 0, scale: float = 1.0) -> pd.DataFrame | None:
     """Pre-tournament title probabilities for every player in one Grand Slam draw."""
     event = matches[matches["tourney_id"] == tourney_id]
     try:
@@ -53,7 +54,7 @@ def forecast_slam(matches: pd.DataFrame, result: EloResult, tourney_id: str, sta
     except BracketError:
         return None
     surface_code = int(event["surface_code"].iloc[0])
-    P = elo_matrix(result, start_row, ids, surface_code, params)
+    P = elo_matrix(result, start_row, ids, surface_code, params, scale=scale)
     ranks = entry_ranks(event, ids)
     names = pd.concat([event[["winner_id", "winner_name"]].set_axis(["id", "name"], axis=1),
                        event[["loser_id", "loser_name"]].set_axis(["id", "name"], axis=1)]

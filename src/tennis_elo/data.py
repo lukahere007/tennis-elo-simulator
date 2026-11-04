@@ -32,6 +32,7 @@ def load_matches(path: Path | str = DATA_PATH) -> pd.DataFrame:
     df = pd.read_parquet(path)
     df = df[df["surface"].isin(list(SURFACE_CODE))].copy()
     df["surface"] = df["surface"].replace({"Carpet": "Hard"})
+    df["tourney_name"] = df["tourney_name"].replace({"Us Open": "US Open"})
     df["surface_code"] = df["surface"].map(SURFACE_CODE).astype(int)
     df["round_order"] = df["round"].map(ROUND_ORDER).fillna(0).astype(int)
     score = df["score"].fillna("").astype(str)

@@ -1,0 +1,50 @@
+{
+  "Elo, 538 defaults (overall)": {
+    "c": 250.0,
+    "o": 5.0,
+    "s": 0.4,
+    "surface_weight": 0.5,
+    "mov_beta": 0.0,
+    "bo5_adjust": true
+  },
+  "Elo tuned (overall only)": {
+    "c": 97.57388276194948,
+    "o": 16.72286837593862,
+    "s": 0.29426042117102996,
+    "surface_weight": 0.5,
+    "mov_beta": 0.0,
+    "bo5_adjust": true
+  },
+  "Elo tuned (surface only)": {
+    "c": 174.16986280558575,
+    "o": 24.229595739399226,
+    "s": 0.36392006051585596,
+    "surface_weight": 0.5,
+    "mov_beta": 0.0,
+    "bo5_adjust": true
+  },
+  "Surface-blend Elo, no Bo5 conversion": {
+    "c": 143.99068889415219,
+    "o": 9.289550436102882,
+    "s": 0.3101792110971918,
+    "surface_weight": 0.5055983375857751,
+    "mov_beta": 0.0,
+    "bo5_adjust": false
+  },
+  "Surface-blend Elo": {
+    "c": 130.2271423359182,
+    "o": 9.951155562646985,
+    "s": 0.29961278145072257,
+    "surface_weight": 0.5125690478379151,
+    "mov_beta": 0.0,
+    "bo5_adjust": true
+  },
+  "Surface-blend Elo + margin of victory": {
+    "c": 71.38553141015977,
+    "o": 5.738168247958976,
+    "s": 0.25204349467938103,
+    "surface_weight": 0.5010766947628936,
+    "mov_beta": 1.5605356026768338,
+    "bo5_adjust": true
+  }
+}

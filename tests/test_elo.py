@@ -73,3 +73,21 @@ def test_walkover_ignored():
     res = run_elo(df, EloParams())
     assert np.isnan(res.p_blend[0])
     assert res.pre_w_overall[1] == 1500 and res.pre_l_overall[1] == 1500
+
+
+def test_rolling_scale_recovers_overconfidence():
+    from tennis_elo.elo import prob_from_diff
+    from tennis_elo.evaluate import fit_scale, rolling_scale
+
+    rng = np.random.default_rng(0)
+    n = 60_000
+    d_true = rng.normal(0, 200, n)
+    won = rng.random(n) < prob_from_diff(d_true, np.zeros(n, bool))
+    d_model = 1.25 * d_true  # ratings 25% too spread out
+    d_w = np.where(won, d_model, -d_model)  # winner-oriented
+    bo5 = np.zeros(n, bool)
+    assert fit_scale(d_w, bo5) == pytest.approx(0.8, abs=0.03)
+    year = np.repeat(np.arange(2010, 2016), n // 6)
+    scales = rolling_scale(d_w, bo5, year, np.ones(n, bool))
+    assert scales[2010] == 1.0  # no past data -> no adjustment
+    assert scales[2015] == pytest.approx(0.8, abs=0.03)

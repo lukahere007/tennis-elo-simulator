@@ -33,7 +33,7 @@ import numpy as np
 import pandas as pd
 
 from .data import games_won
-from .tennis_math import _BO5_ON_GRID
+from .tennis_math import _BO5_ON_GRID, bo3_to_bo5_fast
 
 INITIAL_RATING = 1500.0
 _GRID_N = len(_BO5_ON_GRID) - 1
@@ -189,15 +189,28 @@ def run_elo(matches: pd.DataFrame, params: EloParams = EloParams(),
     return EloResult(p_o, p_s, p_b, pre[0], pre[1], pre[2], pre[3], index, snapshots)
 
 
-def blended_prob(state: EloState, a: int, b: int, surface_code: int, w: float,
-                 best_of: int = 3, bo5_adjust: bool = True):
-    """Forecast P(a beats b) from a rating snapshot; ``a`` and ``b`` may be arrays."""
+def prob_from_diff(d, bo5, bo5_adjust: bool = True):
+    """Win probability from a (blended) rating difference; Bo5 rows are converted."""
+    p = 1.0 / (1.0 + 10.0 ** (-np.asarray(d, float) / 400.0))
+    if bo5_adjust:
+        p = np.where(bo5, bo3_to_bo5_fast(p), p)
+    return p
+
+
+def winner_rating_diff(res: EloResult, w: float) -> np.ndarray:
+    """Blended pre-match rating difference (winner minus loser) for every match."""
+    return (1.0 - w) * (res.pre_w_overall - res.pre_l_overall) + w * (
+        res.pre_w_surface - res.pre_l_surface)
+
+
+def blended_prob(state: EloState, a, b, surface_code: int, w: float,
+                 best_of: int = 3, bo5_adjust: bool = True, scale: float = 1.0):
+    """Forecast P(a beats b) from a rating snapshot; ``a`` and ``b`` may be arrays.
+
+    ``scale`` multiplies the rating difference (walk-forward recalibration, see
+    :func:`tennis_elo.evaluate.rolling_scale`).
+    """
     d = (1.0 - w) * (state.overall[a] - state.overall[b]) + w * (
         state.surface[a, surface_code] - state.surface[b, surface_code]
     )
-    p = 1.0 / (1.0 + 10.0 ** (-d / 400.0))
-    if best_of == 5 and bo5_adjust:
-        from .tennis_math import bo3_to_bo5_fast
-
-        p = bo3_to_bo5_fast(p)
-    return p
+    return prob_from_diff(scale * d, best_of == 5, bo5_adjust)

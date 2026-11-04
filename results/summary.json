@@ -1,0 +1,109 @@
+{
+  "data_range": [
+    "1995-01-02",
+    "2026-04-22"
+  ],
+  "n_train": 47000,
+  "n_test": 31532,
+  "final_params": {
+    "c": 130.2271423359182,
+    "o": 9.951155562646985,
+    "s": 0.29961278145072257,
+    "surface_weight": 0.5125690478379151,
+    "mov_beta": 0.0,
+    "bo5_adjust": true
+  },
+  "rank_logit_coef": [
+    0.5561030563941397,
+    0.22547401129989889
+  ],
+  "higher_rank_rate": 0.6606392294220665,
+  "scale_train_period": 0.9397506710936169,
+  "scale_test_period_hindsight": 0.8079350320043611,
+  "walk_forward_scale_by_year": {
+    "2015": 0.9370894647071959,
+    "2016": 0.9127479771815714,
+    "2017": 0.9124790830430278,
+    "2018": 0.8927783671910873,
+    "2019": 0.8168795830900398,
+    "2020": 0.7774957105713622,
+    "2021": 0.7509437420258694,
+    "2022": 0.7726052182826982,
+    "2023": 0.8153672781124235,
+    "2024": 0.7928452444414409,
+    "2025": 0.7930384352427786,
+    "2026": 0.7505936952378338
+  },
+  "slams": {
+    "n": 44,
+    "favourite_win_rate_elo": 0.4318181818181818,
+    "expected_favourite_wins_elo": 17.954639705720297,
+    "favourite_wins_elo": 19,
+    "favourite_win_rate_rank": 0.4090909090909091,
+    "expected_favourite_wins_rank": 18.231974131082694,
+    "mean_brier_elo": 0.679241763990374,
+    "mean_brier_rank": 0.7416681046616962,
+    "mean_brier_elo_uncalibrated": 0.6763993771200013,
+    "mean_logloss_elo_uncalibrated": 1.3750361063871306,
+    "expected_favourite_wins_uncalibrated": 20.6268804381934,
+    "favourite_wins_uncalibrated": 20,
+    "mean_brier_uniform": 0.9921875,
+    "mean_logloss_elo": 1.4475229278519708,
+    "mean_logloss_rank": 1.8127913668498328,
+    "mean_logloss_uniform": 4.852030263919617,
+    "max_mc_error": 0.007465475809575073,
+    "champion_in_elo_top3": 40,
+    "champion_in_elo_top8": 44,
+    "worst_champion_elo_rank": 8,
+    "n_sims": 20000
+  },
+  "next_slam": {
+    "event": "Roland Garros 2026",
+    "surface": "Clay",
+    "data_through": "2026-04-22",
+    "n_draws": 1000,
+    "scale": 0.7505936952378338,
+    "top": [
+      {
+        "player": "Jannik Sinner",
+        "rating": 2187.363073857381,
+        "p_title": 0.33022274263143114
+      },
+      {
+        "player": "Carlos Alcaraz",
+        "rating": 2173.0909043402808,
+        "p_title": 0.2982014860072686
+      },
+      {
+        "player": "Novak Djokovic",
+        "rating": 2096.2411481157924,
+        "p_title": 0.14738486077157814
+      },
+      {
+        "player": "Alexander Zverev",
+        "rating": 2002.531875514249,
+        "p_title": 0.057562395879532345
+      },
+      {
+        "player": "Arthur Fils",
+        "rating": 1974.9037216323127,
+        "p_title": 0.03511118675486477
+      },
+      {
+        "player": "Lorenzo Musetti",
+        "rating": 1918.0347074791657,
+        "p_title": 0.016494878209203683
+      },
+      {
+        "player": "Casper Ruud",
+        "rating": 1897.2707966227767,
+        "p_title": 0.012163806646193466
+      },
+      {
+        "player": "Tommy Paul",
+        "rating": 1889.8005600958236,
+        "p_title": 0.010895089637139454
+      }
+    ]
+  }
+}
